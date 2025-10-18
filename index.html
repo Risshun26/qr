@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trình tạo QR từ link</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;margin:24px;background:#f7f9fc;color:#0b1220}
+    .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 6px 18px rgba(15,23,42,0.06);max-width:720px;margin:auto}
+    label{display:block;margin-top:12px;font-weight:600}
+    input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #e3e8ef}
+    .row{display:flex;gap:12px;align-items:center;margin-top:12px}
+    button{padding:10px 14px;border-radius:8px;border:0;background:#0f6fff;color:#fff;font-weight:600;cursor:pointer}
+    button.ghost{background:transparent;color:#0f6fff;border:1px solid #cfe0ff}
+    .preview{margin-top:18px;text-align:center}
+    .hint{color:#556; font-size:13px;margin-top:6px}
+    footer{margin-top:18px;color:#667;text-align:center;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Tạo QR từ link (HTML đơn giản)</h2>
+    <label for="url">Nhập link (URL)</label>
+    <input id="url" type="text" placeholder="https://example.com" value="https://example.com" />
+
+    <label for="size">Kích thước (px)</label>
+    <input id="size" type="range" min="100" max="1000" value="300" /> <span id="sizeVal">300</span> px
+
+    <div class="row">
+      <button id="gen">Tạo QR</button>
+      <button id="clear" class="ghost">Xóa</button>
+      <button id="download" class="ghost" disabled>Tải về PNG</button>
+    </div>
+
+    <div class="preview" id="preview">
+      <div class="hint">QR sẽ hiển thị ở đây sau khi nhấn <strong>Tạo QR</strong>.</div>
+    </div>
+
+    <footer>Phương pháp: sử dụng Google Chart API để sinh ảnh QR (client-side). Không cần server.</footer>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById('url');
+    const sizeInput = document.getElementById('size');
+    const sizeVal = document.getElementById('sizeVal');
+    const genBtn = document.getElementById('gen');
+    const clearBtn = document.getElementById('clear');
+    const preview = document.getElementById('preview');
+    const downloadBtn = document.getElementById('download');
+
+    sizeInput.addEventListener('input', ()=> sizeVal.textContent = sizeInput.value);
+
+    function buildQRUrl(text, size){
+      const encoded = encodeURIComponent(text);
+      // Google Chart API for QR: chs={size}x{size}&cht=qr&chl={data}
+      return `https://chart.googleapis.com/chart?chs=${size}x${size}&cht=qr&chl=${encoded}&choe=UTF-8`;
+    }
+
+    genBtn.addEventListener('click', ()=>{
+      const link = urlInput.value.trim();
+      if(!link){
+        alert('Vui lòng nhập link.');
+        urlInput.focus();
+        return;
+      }
+      const size = parseInt(sizeInput.value,10)||300;
+      const qrUrl = buildQRUrl(link, size);
+
+      preview.innerHTML = `<img id="qrImg" src="${qrUrl}" alt="QR code" width="${size}" height="${size}" style="border-radius:8px;border:1px solid #e6eefb;" />`;
+      downloadBtn.disabled = false;
+      // update download link
+      downloadBtn.onclick = ()=>{
+        // open image in new tab with download attribute (works in most browsers)
+        const a = document.createElement('a');
+        a.href = qrUrl;
+        a.download = 'qrcode.png';
+        // For some browsers download of cross-origin images may be blocked; fallback: open in new tab
+        try{ a.click(); }catch(e){ window.open(qrUrl, '_blank'); }
+      };
+    });
+
+    clearBtn.addEventListener('click', ()=>{
+      urlInput.value = '';
+      preview.innerHTML = '<div class="hint">QR sẽ hiển thị ở đây sau khi nhấn <strong>Tạo QR</strong>.</div>';
+      downloadBtn.disabled = true;
+    });
+
+    // Allow pressing Enter to generate
+    urlInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') genBtn.click(); });
+  </script>
+</body>
+</html>
